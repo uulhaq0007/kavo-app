@@ -70,7 +70,7 @@ const fashionStore = Store(
   gridSub: 'Restocked every Thursday morning.',
   deliveryNote: 'Dispatched the same working day',
   searchHint: 'Search fashion',
-  popularSearches: ['Trainers', 'Leather bag', 'Knitwear', 'Smartwatch', 'Pearl'],
+  popularSearches: ['Trainer', 'Leather', 'Knit', 'Smartwatch', 'Pearl'],
 );
 
 const groceryStore = Store(
@@ -181,7 +181,7 @@ const furnitureStore = Store(
   gridSub: 'Made to order, delivered in four to six weeks.',
   deliveryNote: 'Made to order, delivered in four to six weeks',
   searchHint: 'Search sofas, chairs & storage',
-  popularSearches: ['Velvet sofa', 'Armchair', 'Oak', 'Desk', 'Shelving'],
+  popularSearches: ['Velvet sofa', 'Armchair', 'Oak', 'Desk', 'Shelf'],
 );
 
 const stores = {
