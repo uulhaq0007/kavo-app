@@ -85,7 +85,7 @@ class _Hero extends StatelessWidget {
     return Pressable(
       onTap: () => context.openShop(store.key),
       child: SizedBox(
-        height: 430,
+        height: 368,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(26),
           child: Stack(

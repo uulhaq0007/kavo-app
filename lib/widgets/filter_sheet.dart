@@ -52,7 +52,6 @@ class _FilterSheetState extends State<FilterSheet> {
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.86),
       child: KavoSheet(
         title: 'Filters',
-        subtitle: '${plural(count, 'product')} match',
         trailing: TextButton(
           onPressed: _f.activeCount == 0 ? null : () => _set(const ShopFilters()),
           child: const Text('Reset all'),
@@ -105,15 +104,12 @@ class _FilterSheetState extends State<FilterSheet> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     children: [
-                      _PriceBox(label: 'Min', value: money(range.start)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Container(width: 14, height: 1.5, color: KavoColors.body),
-                      ),
-                      _PriceBox(label: 'Max', value: money(range.end)),
+                      Text(money(_bounds.min), style: t.bodySmall),
+                      const Spacer(),
+                      Text(money(_bounds.max), style: t.bodySmall),
                     ],
                   ),
                 ),
@@ -159,19 +155,24 @@ class _FilterSheetState extends State<FilterSheet> {
           ),
           _Section(
             title: 'Availability',
-            child: Column(
+            child: Row(
               children: [
-                _SwitchRow(
-                  title: 'In stock only',
-                  subtitle: 'Hide sold-out pieces',
-                  value: _f.inStockOnly,
-                  onChanged: (v) => _set(_f.copyWith(inStockOnly: v)),
+                Expanded(
+                  child: _ToggleTile(
+                    icon: Icons.inventory_2_outlined,
+                    label: 'In stock only',
+                    value: _f.inStockOnly,
+                    onChanged: (v) => _set(_f.copyWith(inStockOnly: v)),
+                  ),
                 ),
-                _SwitchRow(
-                  title: 'On sale',
-                  subtitle: 'Only show reduced prices',
-                  value: _f.onSaleOnly,
-                  onChanged: (v) => _set(_f.copyWith(onSaleOnly: v)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ToggleTile(
+                    icon: Icons.sell_outlined,
+                    label: 'On sale',
+                    value: _f.onSaleOnly,
+                    onChanged: (v) => _set(_f.copyWith(onSaleOnly: v)),
+                  ),
                 ),
               ],
             ),
@@ -192,7 +193,7 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 26),
+      padding: const EdgeInsets.only(bottom: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -210,61 +211,51 @@ class _Section extends StatelessWidget {
   }
 }
 
-class _PriceBox extends StatelessWidget {
-  const _PriceBox({required this.label, required this.value});
+/// A bordered on/off tile with an icon and a check when on.
+class _ToggleTile extends StatelessWidget {
+  const _ToggleTile({required this.icon, required this.label, required this.value, required this.onChanged});
 
+  final IconData icon;
   final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          border: Border.all(color: KavoColors.line),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: context.text.bodySmall!.copyWith(fontSize: 11.5)),
-            Text(value, style: context.text.titleSmall!.copyWith(fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SwitchRow extends StatelessWidget {
-  const _SwitchRow({required this.title, required this.subtitle, required this.value, required this.onChanged});
-
-  final String title;
-  final String subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: context.text.titleSmall),
-                  Text(subtitle, style: context.text.bodySmall),
-                ],
-              ),
+    final p = context.palette;
+    return Semantics(
+      toggled: value,
+      child: Material(
+        color: value ? p.brandSoft : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: value ? p.brand : KavoColors.line, width: value ? 1.4 : 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => onChanged(!value),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+            child: Row(
+              children: [
+                Icon(icon, size: 19, color: value ? p.brand : KavoColors.body),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleSmall!.copyWith(fontSize: 14, color: value ? p.brandDark : KavoColors.ink),
+                  ),
+                ),
+                AnimatedOpacity(
+                  opacity: value ? 1 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  child: Icon(Icons.check_circle_rounded, size: 18, color: p.brand),
+                ),
+              ],
             ),
-            Switch(value: value, onChanged: onChanged),
-          ],
+          ),
         ),
       ),
     );

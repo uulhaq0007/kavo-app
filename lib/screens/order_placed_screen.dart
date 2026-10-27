@@ -83,20 +83,38 @@ class OrderPlacedScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         SummaryRow('Estimated delivery', formatDay(order.eta)),
-                        SummaryRow('Items', '${plural(order.itemCount, 'item')} · ${plural(order.storeCount, 'store')}'),
                         SummaryRow('Deliver to', order.address.line1),
-                        SummaryRow('Paid', moneyExact(order.total)),
-                        SummaryRow('Payment', order.payment.title),
+                        SummaryRow('Paid', '${moneyExact(order.total)} · ${order.payment.title}'),
+                        const SizedBox(height: 8),
+                        _ThumbRow(order: order),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 22),
-            Text('Shipping from', style: t.titleSmall!.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 10),
-            _ThumbStrip(order: order),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: KavoColors.line),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.mark_email_read_outlined, color: context.palette.brand),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      order.storeCount > 1
+                          ? 'Each store ships separately. Tracking for every parcel lands in your inbox.'
+                          : 'Tracking lands in your inbox as soon as the parcel leaves us.',
+                      style: t.bodyMedium!.copyWith(fontSize: 13.5, height: 1.45),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -154,31 +172,30 @@ class _SuccessBadge extends StatelessWidget {
   }
 }
 
-/// Each line's photo with its store chip underneath.
-class _ThumbStrip extends StatelessWidget {
-  const _ThumbStrip({required this.order});
+/// Line photos plus a summary like "5 items · 1 store".
+class _ThumbRow extends StatelessWidget {
+  const _ThumbRow({required this.order});
 
   final Order order;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 112,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: order.lines.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, i) {
-          final line = order.lines[i];
-          return Column(
-            children: [
-              SizedBox(width: 78, height: 78, child: KavoImage(line.product.image, radius: BorderRadius.circular(16))),
-              const SizedBox(height: 8),
-              StoreChip(line.product.store),
-            ],
-          );
-        },
-      ),
+    final shown = order.lines.take(4).toList();
+    return Row(
+      children: [
+        for (final line in shown) ...[
+          SizedBox(width: 44, height: 44, child: KavoImage(line.product.image, radius: BorderRadius.circular(12))),
+          const SizedBox(width: 8),
+        ],
+        const Spacer(),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(plural(order.itemCount, 'item'), style: context.text.titleSmall!.copyWith(fontWeight: FontWeight.w600)),
+            Text('from ${plural(order.storeCount, 'store')}', style: context.text.bodySmall),
+          ],
+        ),
+      ],
     );
   }
 }

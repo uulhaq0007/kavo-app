@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../data/catalog.dart';
-import '../data/stores.dart';
 import '../models/format.dart';
 import '../models/product.dart';
 import '../models/shop_filters.dart';
@@ -346,7 +345,7 @@ class _StorePicker extends StatelessWidget {
             const SizedBox(width: 7),
             Flexible(
               child: Text(
-                '${store.label} · ${storeOf(store).tagline}',
+                '${store.label} storefront',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.text.bodySmall!.copyWith(fontSize: 13),

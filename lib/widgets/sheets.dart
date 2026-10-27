@@ -431,40 +431,238 @@ class PaletteSwatch extends StatelessWidget {
   }
 }
 
-Future<void> showEditProfileSheet(BuildContext context) {
-  final profile = context.readAccount.profile;
-  final name = TextEditingController(text: profile.name);
-  final email = TextEditingController(text: profile.email);
-  final phone = TextEditingController(text: profile.phone);
-  final form = GlobalKey<FormState>();
-  return showKavoSheet<void>(context, (sheet) {
+Future<void> showEditProfileSheet(BuildContext context) => showKavoSheet<void>(
+  context,
+  (_) => _ProfileForm(onSaved: () => showSnack(context, 'Profile updated', icon: Icons.check_circle_rounded)),
+);
+
+/// Address entry. Returns the new address, or null if dismissed.
+Future<Address?> showAddressForm(BuildContext context) => showKavoSheet<Address>(context, (_) => const _AddressForm());
+
+/// Card entry with light validation. Returns the tokenised card, or null.
+Future<PaymentMethod?> showCardForm(BuildContext context) =>
+    showKavoSheet<PaymentMethod>(context, (_) => const _CardForm());
+
+String? _required(String? v) => (v == null || v.trim().isEmpty) ? 'Required' : null;
+String? _validEmail(String? v) =>
+    _required(v) ?? (RegExp(r'^\S+@\S+\.\S+$').hasMatch(v!.trim()) ? null : 'Enter a valid email');
+String _digits(String s) => s.replaceAll(RegExp(r'\D'), '');
+
+/// Gives a form sheet a [Form] key and text controllers that are disposed
+/// with it.
+mixin _FormSheetState<T extends StatefulWidget> on State<T> {
+  final formKey = GlobalKey<FormState>();
+  final _controllers = <TextEditingController>[];
+
+  TextEditingController field([String text = '']) {
+    final controller = TextEditingController(text: text);
+    _controllers.add(controller);
+    return controller;
+  }
+
+  bool get valid => formKey.currentState!.validate();
+
+  @override
+  void dispose() {
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+}
+
+class _ProfileForm extends StatefulWidget {
+  const _ProfileForm({required this.onSaved});
+
+  final VoidCallback onSaved;
+
+  @override
+  State<_ProfileForm> createState() => _ProfileFormState();
+}
+
+class _ProfileFormState extends State<_ProfileForm> with _FormSheetState {
+  late final _profile = context.readAccount.profile;
+  late final _name = field(_profile.name);
+  late final _email = field(_profile.email);
+  late final _phone = field(_profile.phone);
+
+  void _save() {
+    if (!valid) return;
+    context.readAccount.updateProfile(
+      _profile.copyWith(name: _name.text.trim(), email: _email.text.trim(), phone: _phone.text.trim()),
+    );
+    Navigator.of(context).pop();
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Form(
-      key: form,
+      key: formKey,
       child: KavoSheet(
         title: 'Edit profile',
-        footer: FilledButton(
-          onPressed: () {
-            if (!form.currentState!.validate()) return;
-            sheet.readAccount.updateProfile(
-              profile.copyWith(name: name.text.trim(), email: email.text.trim(), phone: phone.text.trim()),
-            );
-            Navigator.of(sheet).pop();
-            showSnack(context, 'Profile updated', icon: Icons.check_circle_rounded);
-          },
-          child: const Text('Save changes'),
-        ),
+        footer: FilledButton(onPressed: _save, child: const Text('Save changes')),
         children: [
-          _Field(controller: name, label: 'Full name', validator: _required),
-          _Field(controller: email, label: 'Email', keyboard: TextInputType.emailAddress, validator: _email),
-          _Field(controller: phone, label: 'Phone', keyboard: TextInputType.phone, validator: _required),
+          _Field(controller: _name, label: 'Full name', validator: _required),
+          _Field(controller: _email, label: 'Email', keyboard: TextInputType.emailAddress, validator: _validEmail),
+          _Field(controller: _phone, label: 'Phone', keyboard: TextInputType.phone, validator: _required),
         ],
       ),
     );
-  });
+  }
 }
 
-String? _required(String? v) => (v == null || v.trim().isEmpty) ? 'Required' : null;
-String? _email(String? v) => _required(v) ?? (RegExp(r'^\S+@\S+\.\S+$').hasMatch(v!.trim()) ? null : 'Enter a valid email');
+class _AddressForm extends StatefulWidget {
+  const _AddressForm();
+
+  @override
+  State<_AddressForm> createState() => _AddressFormState();
+}
+
+class _AddressFormState extends State<_AddressForm> with _FormSheetState {
+  late final _name = field(context.readAccount.profile.name);
+  late final _line1 = field();
+  late final _line2 = field();
+  late final _city = field();
+  late final _phone = field(context.readAccount.profile.phone);
+  String _label = 'Home';
+
+  void _save() {
+    if (!valid) return;
+    final line2 = _line2.text.trim();
+    Navigator.of(context).pop(
+      Address(
+        id: 'addr-${DateTime.now().microsecondsSinceEpoch}',
+        label: _label,
+        name: _name.text.trim(),
+        line1: _line1.text.trim(),
+        line2: line2.isEmpty ? null : line2,
+        city: _city.text.trim(),
+        phone: _phone.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: formKey,
+      child: KavoSheet(
+        title: 'New address',
+        footer: FilledButton(onPressed: _save, child: const Text('Save address')),
+        children: [
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final l in ['Home', 'Work', 'Other'])
+                ChoiceChip(label: Text(l), selected: l == _label, onSelected: (_) => setState(() => _label = l)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _Field(controller: _name, label: 'Full name', validator: _required),
+          _Field(controller: _line1, label: 'Street address', hint: '24 Juniper Lane', validator: _required),
+          _Field(controller: _line2, label: 'Apartment, floor (optional)'),
+          _Field(controller: _city, label: 'City, state and ZIP', hint: 'Bellhaven, OR 97205', validator: _required),
+          _Field(controller: _phone, label: 'Phone', keyboard: TextInputType.phone, validator: _required),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardForm extends StatefulWidget {
+  const _CardForm();
+
+  @override
+  State<_CardForm> createState() => _CardFormState();
+}
+
+class _CardFormState extends State<_CardForm> with _FormSheetState {
+  late final _number = field();
+  late final _expiry = field();
+  late final _cvc = field();
+  late final _holder = field(context.readAccount.profile.name);
+
+  void _save() {
+    if (!valid) return;
+    final n = _digits(_number.text);
+    Navigator.of(context).pop(
+      PaymentMethod(
+        id: 'card-${DateTime.now().microsecondsSinceEpoch}',
+        brand: n.startsWith('4') ? CardBrand.visa : CardBrand.mastercard,
+        last4: n.substring(n.length - 4),
+        expiry: _expiry.text,
+        holder: _holder.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: formKey,
+      child: KavoSheet(
+        title: 'Add a card',
+        subtitle: 'We accept Visa and Mastercard.',
+        footer: FilledButton(onPressed: _save, child: const Text('Save card')),
+        children: [
+          _Field(
+            controller: _number,
+            label: 'Card number',
+            hint: '4242 4242 4242 4242',
+            keyboard: TextInputType.number,
+            formatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(16),
+              _CardNumberFormatter(),
+            ],
+            validator: (v) {
+              final n = _digits(v ?? '');
+              if (n.length != 16) return 'Enter the 16-digit card number';
+              if (!n.startsWith('4') && !n.startsWith('5')) return 'Only Visa and Mastercard are accepted';
+              return null;
+            },
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _Field(
+                  controller: _expiry,
+                  label: 'Expiry',
+                  hint: 'MM/YY',
+                  keyboard: TextInputType.number,
+                  formatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(4),
+                    _ExpiryFormatter(),
+                  ],
+                  validator: (v) {
+                    final m = RegExp(r'^(\d{2})/(\d{2})$').firstMatch(v ?? '');
+                    final month = int.tryParse(m?.group(1) ?? '');
+                    return month == null || month < 1 || month > 12 ? 'Use MM/YY' : null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _Field(
+                  controller: _cvc,
+                  label: 'CVC',
+                  hint: '123',
+                  keyboard: TextInputType.number,
+                  formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
+                  validator: (v) => (v ?? '').length == 3 ? null : '3 digits',
+                ),
+              ),
+            ],
+          ),
+          _Field(controller: _holder, label: 'Name on card', validator: _required),
+        ],
+      ),
+    );
+  }
+}
 
 class _Field extends StatelessWidget {
   const _Field({
@@ -498,143 +696,6 @@ class _Field extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Address entry. Returns the new address, or null if dismissed.
-Future<Address?> showAddressForm(BuildContext context) {
-  final form = GlobalKey<FormState>();
-  final name = TextEditingController(text: context.readAccount.profile.name);
-  final line1 = TextEditingController();
-  final line2 = TextEditingController();
-  final city = TextEditingController();
-  final phone = TextEditingController(text: context.readAccount.profile.phone);
-  var label = 'Home';
-
-  return showKavoSheet<Address>(context, (sheet) {
-    return StatefulBuilder(
-      builder: (sheet, setState) => Form(
-        key: form,
-        child: KavoSheet(
-          title: 'New address',
-          footer: FilledButton(
-            onPressed: () {
-              if (!form.currentState!.validate()) return;
-              Navigator.of(sheet).pop(
-                Address(
-                  id: 'addr-${DateTime.now().microsecondsSinceEpoch}',
-                  label: label,
-                  name: name.text.trim(),
-                  line1: line1.text.trim(),
-                  line2: line2.text.trim().isEmpty ? null : line2.text.trim(),
-                  city: city.text.trim(),
-                  phone: phone.text.trim(),
-                ),
-              );
-            },
-            child: const Text('Save address'),
-          ),
-          children: [
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final l in ['Home', 'Work', 'Other'])
-                  ChoiceChip(label: Text(l), selected: l == label, onSelected: (_) => setState(() => label = l)),
-              ],
-            ),
-            const SizedBox(height: 14),
-            _Field(controller: name, label: 'Full name', validator: _required),
-            _Field(controller: line1, label: 'Street address', hint: '24 Juniper Lane', validator: _required),
-            _Field(controller: line2, label: 'Apartment, floor (optional)'),
-            _Field(controller: city, label: 'City, state and ZIP', hint: 'Bellhaven, OR 97205', validator: _required),
-            _Field(controller: phone, label: 'Phone', keyboard: TextInputType.phone, validator: _required),
-          ],
-        ),
-      ),
-    );
-  });
-}
-
-/// Card entry with light validation. Returns the tokenised card, or null.
-Future<PaymentMethod?> showCardForm(BuildContext context) {
-  final form = GlobalKey<FormState>();
-  final number = TextEditingController();
-  final expiry = TextEditingController();
-  final cvc = TextEditingController();
-  final holder = TextEditingController(text: context.readAccount.profile.name);
-
-  String digits(String s) => s.replaceAll(RegExp(r'\D'), '');
-
-  return showKavoSheet<PaymentMethod>(context, (sheet) {
-    return Form(
-      key: form,
-      child: KavoSheet(
-        title: 'Add a card',
-        subtitle: 'We accept Visa and Mastercard.',
-        footer: FilledButton(
-          onPressed: () {
-            if (!form.currentState!.validate()) return;
-            final n = digits(number.text);
-            Navigator.of(sheet).pop(
-              PaymentMethod(
-                id: 'card-${DateTime.now().microsecondsSinceEpoch}',
-                brand: n.startsWith('4') ? CardBrand.visa : CardBrand.mastercard,
-                last4: n.substring(n.length - 4),
-                expiry: expiry.text,
-                holder: holder.text.trim(),
-              ),
-            );
-          },
-          child: const Text('Save card'),
-        ),
-        children: [
-          _Field(
-            controller: number,
-            label: 'Card number',
-            hint: '4242 4242 4242 4242',
-            keyboard: TextInputType.number,
-            formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16), _CardNumberFormatter()],
-            validator: (v) {
-              final n = digits(v ?? '');
-              if (n.length != 16) return 'Enter the 16-digit card number';
-              if (!n.startsWith('4') && !n.startsWith('5')) return 'Only Visa and Mastercard are accepted';
-              return null;
-            },
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _Field(
-                  controller: expiry,
-                  label: 'Expiry',
-                  hint: 'MM/YY',
-                  keyboard: TextInputType.number,
-                  formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4), _ExpiryFormatter()],
-                  validator: (v) {
-                    final m = RegExp(r'^(\d{2})/(\d{2})$').firstMatch(v ?? '');
-                    final month = int.tryParse(m?.group(1) ?? '');
-                    return month == null || month < 1 || month > 12 ? 'Use MM/YY' : null;
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _Field(
-                  controller: cvc,
-                  label: 'CVC',
-                  hint: '123',
-                  keyboard: TextInputType.number,
-                  formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
-                  validator: (v) => (v ?? '').length == 3 ? null : '3 digits',
-                ),
-              ),
-            ],
-          ),
-          _Field(controller: holder, label: 'Name on card', validator: _required),
-        ],
-      ),
-    );
-  });
 }
 
 class _CardNumberFormatter extends TextInputFormatter {

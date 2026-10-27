@@ -346,6 +346,8 @@ ThemeData buildKavoTheme(KavoPalette p) {
       trackHeight: 4,
       rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 11, elevation: 2),
       rangeTrackShape: const RoundedRectRangeSliderTrackShape(),
+      rangeTickMarkShape: const RoundRangeSliderTickMarkShape(tickMarkRadius: 0),
+      tickMarkShape: SliderTickMarkShape.noTickMark,
       showValueIndicator: ShowValueIndicator.never,
     ),
     switchTheme: SwitchThemeData(

@@ -702,14 +702,22 @@ List<Product> relatedTo(Product product, {int count = 6}) {
   return others.take(count).toList();
 }
 
-/// Matches every word of the query against name, category and store.
+/// Matches every word of the query against name, category, store and
+/// description. Name and category matches rank above description-only ones.
 List<Product> search(String query, {StoreKey? store}) {
   final words = query.toLowerCase().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
   if (words.isEmpty) return const [];
-  return [
-    for (final p in catalog)
-      if ((store == null || p.store == store) &&
-          words.every((w) => '${p.name} ${p.category} ${p.store.label} ${p.description}'.toLowerCase().contains(w)))
-        p,
-  ];
+  bool hits(String text) => words.every(text.toLowerCase().contains);
+
+  final strong = <Product>[];
+  final weak = <Product>[];
+  for (final p in catalog) {
+    if (store != null && p.store != store) continue;
+    if (hits('${p.name} ${p.category} ${p.store.label}')) {
+      strong.add(p);
+    } else if (hits('${p.name} ${p.category} ${p.store.label} ${p.description}')) {
+      weak.add(p);
+    }
+  }
+  return [...strong, ...weak];
 }
