@@ -1,30 +1,37 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:kavo_app/main.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:kavo_app/app.dart';
+import 'package:kavo_app/theme.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('boots into fashion, switches store and keeps the shared cart', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Building a theme registers the bundled Jost weights; let them load so the
+    // first frame measures text with the real font.
+    buildKavoTheme(KavoPalette.fashion);
+    await tester.runAsync(GoogleFonts.pendingFonts);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.pumpWidget(const KavoApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('KAVO'), findsOneWidget);
+    expect(find.text('BEST FOR YOUR CATEGORIES'), findsOneWidget);
+
+    // Switching storefront swaps the whole home.
+    await tester.tap(find.text('GROCERY'));
+    await tester.pumpAndSettle();
+    expect(find.text('SHOP BY AISLE'), findsOneWidget);
+
+    // The cart was seeded from all three stores and survives the switch.
+    await tester.tap(find.text('Cart'));
+    await tester.pumpAndSettle();
+    expect(find.text('Atlantic Salmon Fillet'), findsOneWidget);
+    expect(find.text('Everyday Cotton Set'), findsOneWidget);
+    expect(find.text('Ash Perch Stool'), findsOneWidget);
   });
 }

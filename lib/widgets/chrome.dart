@@ -176,7 +176,7 @@ class StoreSwitcher extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final t = context.text;
-    final keys = StoreKey.values;
+    const keys = StoreKey.values;
     final alignX = -1 + 2 * current.index / (keys.length - 1);
 
     return Container(
@@ -225,16 +225,21 @@ class StoreSwitcher extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 250),
-                              style: t.labelSmall!.copyWith(
-                                fontSize: 11.5,
-                                letterSpacing: 1,
-                                color: key == current
-                                    ? thumbInk ?? p.switcherThumbInk
-                                    : (ink ?? p.barInk).withValues(alpha: 0.82),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 250),
+                                  style: t.labelSmall!.copyWith(
+                                    fontSize: 11.5,
+                                    letterSpacing: 1,
+                                    color: key == current
+                                        ? thumbInk ?? p.switcherThumbInk
+                                        : (ink ?? p.barInk).withValues(alpha: 0.82),
+                                  ),
+                                  child: Text(key.label.toUpperCase()),
+                                ),
                               ),
-                              child: Text(key.label.toUpperCase()),
                             ),
                           ],
                         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 

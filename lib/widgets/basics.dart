@@ -178,7 +178,7 @@ class QtyStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final h = compact ? 34.0 : 54.0;
     Widget button(IconData icon, VoidCallback? onTap, String label) => SizedBox(
-      width: h,
+      width: compact ? h : 46,
       height: h,
       child: IconButton(
         onPressed: onTap,

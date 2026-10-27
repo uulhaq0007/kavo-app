@@ -28,7 +28,7 @@ class AnnounceBar extends StatelessWidget {
           Expanded(
             child: Text(
               store.announce,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: context.text.labelMedium!.copyWith(color: p.announceInk, fontSize: 13),
             ),
