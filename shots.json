@@ -1,0 +1,10 @@
+[
+  {"name": "fashion-home", "route": "/fashion?shot=1", "statusBar": "light", "wait": 3000},
+  {"name": "grocery-home", "route": "/grocery?shot=1", "statusBar": "light", "wait": 3000},
+  {"name": "furniture-home", "route": "/furniture?shot=1", "statusBar": "dark", "wait": 3000},
+  {"name": "product-detail", "route": "/fashion/product/cable-knit-poncho?shot=1", "statusBar": "dark", "wait": 3000},
+  {"name": "shared-cart", "route": "/fashion/cart?shot=1", "statusBar": "dark", "wait": 3000},
+  {"name": "shop-and-filters", "route": "/fashion/shop?filters=1&cat=Shoes&min=90&max=200&rating=4.5&stock=1&shot=1", "statusBar": "dark", "wait": 3500},
+  {"name": "checkout", "route": "/grocery/cart/checkout?step=2&shot=1", "statusBar": "dark", "wait": 3000},
+  {"name": "account-and-orders", "route": "/furniture/account?shot=1", "statusBar": "dark", "wait": 3000}
+]
